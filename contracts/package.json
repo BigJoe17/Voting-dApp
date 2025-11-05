@@ -1,0 +1,18 @@
+{
+  "name": "votingdapp-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile && node scripts/copy-abi.js",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "copy-abi": "node scripts/copy-abi.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0",
+    "chai": "^4.5.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.4.0"
+  }
+}
