@@ -19,6 +19,7 @@ const AdminPage = () => {
 
   // Form state
   const [candidateName, setCandidateName] = useState('')
+  const [candidateImage, setCandidateImage] = useState('')
   const [durationSeconds, setDurationSeconds] = useState(60)
 
   useEffect(() => {
@@ -44,12 +45,15 @@ const AdminPage = () => {
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(VOTING_CONTRACT_ADDRESS, VotingABI.abi, signer)
 
-      const tx = await contract.addCandidate(candidateName)
+      // If no image CID provided, use a placeholder
+      const imageCID = candidateImage.trim() || 'QmPlaceholder123'
+      const tx = await contract.addCandidate(candidateName, imageCID)
       console.log('Transaction hash:', tx.hash)
       await tx.wait()
 
       alert('✅ Candidate added successfully!')
       setCandidateName('')
+      setCandidateImage('')
     } catch (error) {
       console.error('addCandidate error:', error)
       alert(error?.reason || error?.message || 'Failed to add candidate')
@@ -67,11 +71,11 @@ const AdminPage = () => {
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(VOTING_CONTRACT_ADDRESS, VotingABI.abi, signer)
 
-      let tx = await contract.addCandidate('John Doe')
+      let tx = await contract.addCandidate('John Doe', 'QmJohnDoeImage')
       console.log('Adding John Doe:', tx.hash)
       await tx.wait()
 
-      tx = await contract.addCandidate('Jane Smith')
+      tx = await contract.addCandidate('Jane Smith', 'QmJaneSmithImage')
       console.log('Adding Jane Smith:', tx.hash)
       await tx.wait()
 
@@ -179,6 +183,20 @@ const AdminPage = () => {
                   value={candidateName}
                   onChange={(e) => setCandidateName(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Image CID (IPFS) (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="QmExample... (optional)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={candidateImage}
+                  onChange={(e) => setCandidateImage(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty to use placeholder</p>
               </div>
 
               <div>

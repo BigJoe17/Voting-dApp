@@ -31,26 +31,20 @@ export default function Home() {
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum)
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider)
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI.abi, provider)
       
-      // Get all candidate addresses
-      const candidateAddresses = await contract.getCandidate()
+      // Get all candidates using the new getAllCandidates function
+      const result = await contract.getAllCandidates()
       
-      // Fetch data for each candidate
-      const candidateData = await Promise.all(
-        candidateAddresses.map(async (addr) => {
-          const data = await contract.getCandidateData(addr)
-          return {
-            id: Number(data[0]),
-            name: data[2],
-            age: data[1],
-            image: data[3],
-            votes: Number(data[4]),
-            address: data[5],
-            ipfs: data[6]
-          }
-        })
-      )
+      // result is a tuple: (ids, names, imageCIDs, voteCounts)
+      const [ids, names, imageCIDs, voteCounts] = result
+      
+      const candidateData = ids.map((id, index) => ({
+        id: Number(id),
+        name: names[index],
+        imageCID: imageCIDs[index],
+        votes: Number(voteCounts[index])
+      }))
       
       setCandidates(candidateData)
       setError('') // Clear any previous errors on success
@@ -75,7 +69,7 @@ export default function Home() {
     }
   }, [])
 
-  async function handleVote(candidateAddress, candidateId) {
+  async function handleVote(candidateId) {
     if (!walletClient || !window.ethereum) {
       alert('Please connect your wallet')
       return
@@ -84,9 +78,9 @@ export default function Home() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer)
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI.abi, signer)
       
-      const tx = await contract.vote(candidateAddress, candidateId)
+      const tx = await contract.vote(candidateId)
       console.log('Transaction sent:', tx.hash)
       await tx.wait()
       console.log('Vote confirmed!')
@@ -151,7 +145,7 @@ export default function Home() {
           <ProposalCard 
             key={c.id} 
             proposal={c} 
-            onVote={() => handleVote(c.address, c.id)} 
+            onVote={() => handleVote(c.id)} 
             connected={isConnected} 
           />
         ))}
