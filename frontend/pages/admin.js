@@ -4,6 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { ethers } from 'ethers'
 import VotingABI from '../abis/VotingContract.json'
 import AuthABI from '../abis/AuthManager.json'
+import { connectMetaMask, checkNetwork } from '../utils/metamaskHelper'
 
 const VOTING_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ''
 const AUTH_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_AUTH_CONTRACT_ADDRESS || ''
@@ -28,6 +29,24 @@ const AdminPage = () => {
 
   // Auth is now handled by the withAuth HOC
 
+  // Manual wallet connection handler (works with any injected wallet)
+  async function handleManualConnect() {
+    if (typeof window.ethereum === 'undefined') {
+      alert('No wallet detected. Please install Coinbase Wallet or MetaMask.');
+      return;
+    }
+    
+    try {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await checkNetwork();
+      // Force page refresh to update wagmi state
+      window.location.reload();
+    } catch (error) {
+      console.error('Manual connect error:', error);
+      alert('Connection failed: ' + (error?.message || error));
+    }
+  }
+
   async function addCandidate(e) {
     e.preventDefault()
     if (!walletClient || !window.ethereum || !isAdmin) {
@@ -43,6 +62,7 @@ const AdminPage = () => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
+      console.log('Signer address:', await signer.getAddress())
       const contract = new ethers.Contract(VOTING_CONTRACT_ADDRESS, VotingABI.abi, signer)
 
       // If no image CID provided, use a placeholder
@@ -150,12 +170,31 @@ const AdminPage = () => {
             Admin: {user?.username} ({address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Loading...'})
           </p>
         </div>
-        <ConnectButton />
+        <div className="flex gap-2">
+          <ConnectButton />
+          {!isConnected && (
+            <button
+              onClick={handleManualConnect}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+              title="Direct wallet connection"
+            >
+              🔗 Force Connect
+            </button>
+          )}
+        </div>
       </header>
 
       {!isConnected && (
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6">
-          <p>Please connect your wallet to access admin functions</p>
+          <p className="font-bold">⚠️ Wallet Connection Help</p>
+          <p>If clicking "Connect Wallet" doesn't work, try:</p>
+          <ul className="list-disc ml-5 mt-2">
+            <li>Click the blue "🔗 Force Connect" button above</li>
+            <li>Check your wallet extension for a pending connection request</li>
+            <li>Make sure your wallet is unlocked</li>
+            <li>Configure Localhost 8545 network (Chain ID: 1337, RPC: http://127.0.0.1:8545)</li>
+            <li>Import the admin account private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</li>
+          </ul>
         </div>
       )}
 
